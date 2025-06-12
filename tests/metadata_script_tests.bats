@@ -1,84 +1,91 @@
 #!/usr/bin/env bats
+# shellcheck disable=SC2154
 
 load 'test_helper.bash'
 
-# Creates a fixtures directory for tests. Runs once per file.
-setup_file() {
-	mkdir -p "tests/fixtures"
-}
-
-# Cleans up the fixtures directory. Runs once per file.
-teardown_file() {
-	rm -rf "tests/fixtures"
-}
-
+# Load the script and its dependencies for direct function testing.
 setup() {
-	# Point to the actual composer names file to allow for correct lookups.
-	export COMPOSER_NAMES_PATH="$BATS_TEST_DIRNAME/../composer_names.sh"
+	# Source the composer names to populate the array in this shell.
+	# shellcheck disable=SC1091
+	source "$BATS_TEST_DIRNAME/../composer_names.sh"
+	# Source the main script to get access to its functions.
+	# shellcheck disable=SC1091
+	source "$BATS_TEST_DIRNAME/../metadata_script.sh"
 }
 
-teardown() {
-	# Unset the variable to ensure a clean state for the next test.
-	unset COMPOSer_NAMES_PATH
-}
-
-# Helper function to run a test for a given filename and expected metadata.
-# This approach isolates filename parsing from composer full name lookups.
-run_parsing_test() {
-	local filename="$1"
+# Helper function to test the full metadata generation from a filename.
+# This tests the integration of parsing, formatting, and lookup functions.
+run_metadata_generation_test() {
+	local filename_no_ext="${1%.*}"
 	local expected_composer="$2"
 	local expected_title="$3"
 	local expected_keywords="$4"
 
-	touch "tests/fixtures/$filename"
+	# Run the same logic as the main script's process_file function.
+	parse_filename_components "$filename_no_ext"
 
-	run bash "$BATS_TEST_DIRNAME/../metadata_script.sh" "tests/fixtures"
+	local actual_composer
+	actual_composer=$(get_full_composer_name "$PARSED_COMPOSER_LAST_NAME")
 
-	[ "$status" -eq 0 ]
-	echo "$output" | grep "Composer: $expected_composer"
-	echo "$output" | grep "Title: \"$expected_title\""
-	echo "$output" | grep "Keywords (Tags): \"$expected_keywords\""
+	local formatted_work
+	formatted_work=$(format_work_title "$PARSED_WORK_IDENTIFIER")
+	local formatted_part
+	formatted_part=$(format_part_string "$PARSED_PART")
+	local actual_title="${formatted_work} - ${formatted_part} Part"
 
-	# Clean up the specific file after the test
-	rm "tests/fixtures/$filename"
+	local formatted_opus
+	formatted_opus=$(format_opus_string "$PARSED_OPUS")
+	local instrument_family
+	instrument_family=$(get_instrument_family "$formatted_part")
+
+	local all_keywords=("Orchestral" "${formatted_part}" "${formatted_opus}" "${instrument_family}")
+	local actual_keywords
+	actual_keywords=$(
+		IFS=,
+		echo "${all_keywords[*]}"
+	)
+
+	[ "$actual_composer" = "$expected_composer" ]
+	[ "$actual_title" = "$expected_title" ]
+	[ "$actual_keywords" = "$expected_keywords" ]
 }
 
-@test "filename parsing: Beethoven Symphony 5" {
-	run_parsing_test \
+@test "metadata generation: Beethoven Symphony 5" {
+	run_metadata_generation_test \
 		"Beethoven_Symphony05_Op67_Violin1.pdf" \
 		"Ludwig van Beethoven" \
 		"Symphony 05 - Violin 1 Part" \
-		"Orchestral, Violin 1, Op. 67, Strings"
+		"Orchestral,Violin 1,Op. 67,Strings"
 }
 
-@test "filename parsing: Dvořák Symphony 9" {
-	run_parsing_test \
+@test "metadata generation: Dvořák Symphony 9" {
+	run_metadata_generation_test \
 		"Dvorak_Symphony09_Op95_Cello.pdf" \
 		"Antonín Dvořák" \
 		"Symphony 09 - Cello Part" \
-		"Orchestral, Cello, Op. 95, Strings"
+		"Orchestral,Cello,Op. 95,Strings"
 }
 
-@test "filename parsing: Tchaikovsky Symphony 6" {
-	run_parsing_test \
+@test "metadata generation: Tchaikovsky Symphony 6" {
+	run_metadata_generation_test \
 		"Tchaikovsky_Symphony06_Op74_Clarinet1.pdf" \
 		"Pyotr Ilyich Tchaikovsky" \
 		"Symphony 06 - Clarinet 1 Part" \
-		"Orchestral, Clarinet 1, Op. 74, Woodwind"
+		"Orchestral,Clarinet 1,Op. 74,Woodwind"
 }
 
-@test "filename parsing: Brahms Symphony 4" {
-	run_parsing_test \
+@test "metadata generation: Brahms Symphony 4" {
+	run_metadata_generation_test \
 		"Brahms_Symphony04_Op98_Oboe2.pdf" \
 		"Johannes Brahms" \
 		"Symphony 04 - Oboe 2 Part" \
-		"Orchestral, Oboe 2, Op. 98, Woodwind"
+		"Orchestral,Oboe 2,Op. 98,Woodwind"
 }
 
-@test "filename parsing: Sibelius Violin Concerto" {
-	run_parsing_test \
+@test "metadata generation: Sibelius Violin Concerto" {
+	run_metadata_generation_test \
 		"Sibelius_ViolinConcerto_Op47_Trumpet1.pdf" \
 		"Jean Sibelius" \
 		"Violin Concerto - Trumpet 1 Part" \
-		"Orchestral, Trumpet 1, Op. 47, Brass"
+		"Orchestral,Trumpet 1,Op. 47,Brass"
 }

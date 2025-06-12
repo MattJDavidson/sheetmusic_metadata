@@ -29,6 +29,43 @@ The script uses `exiftool` to write to standard PDF metadata fields. forScore re
 -   **PDF Subject** is set to "Orchestral", which becomes the **Genre** in forScore.
 -   **PDF Keywords** are set to a comma-separated list including "Orchestral", the formatted part, the formatted opus, and the instrument family, which become **Tags** in forScore.
 
+### Enabling Automatic Metadata Fetching in forScore
+
+To get the most out of this script, it is recommended to enable "automatic fetching for new files" in forScore's settings panel. This feature allows forScore to automatically read the PDF metadata and categorize your files upon import.
+
+For more details, please see the official [forScore documentation on metadata fetching](https://forscore.co/kb/fetching-pdf-metadata/).
+
+## Recommended Folder Structure
+
+While not required for the script to function, organizing your sheet music into a consistent folder structure is highly recommended for both manual browsing and automated processing. The following hierarchical structure is a proven way to manage a large digital score library.
+
+**`MySheetMusic/[Instrument]/[Category]/[Composer_LastName]/[Filename].pdf`**
+
+### Structure Breakdown
+
+-   **`MySheetMusic/` (Root Directory)**: The main folder for your entire sheet music collection.
+-   **`[Instrument]/`**: The first level organizes music by the primary instrument.
+    -   *Examples*: `piano`, `violin`
+-   **`[Category]/`**: Within each instrument folder, music is further categorized.
+    -   *Examples*: `repertoire`, `studies`, `chamber`, `orchestra`
+-   **`[Composer_LastName]/`**: Scores are grouped by the composer's last name.
+    -   *Examples*: `Beethoven`, `Czerny`, `Dvorak`
+-   **`[Filename].pdf`**: The individual PDF file, named according to the script's convention.
+
+### Examples
+
+**Violin**
+-   **Repertoire:** `MySheetMusic/violin/repertoire/Bach/Bach_SonataNo1_BWV1001_Violin.pdf`
+-   **Chamber:** `MySheetMusic/violin/chamber/Beethoven/Beethoven_StringQuartet_Op18No4_Violin1.pdf`
+-   **Orchestra:** `MySheetMusic/violin/orchestra/Dvorak/Dvorak_Symphony09_Op95_Violin1.pdf`
+-   **Studies:** `MySheetMusic/violin/studies/Kreutzer/Kreutzer_42Studies_Violin.pdf`
+
+**Piano**
+-   **Repertoire:** `MySheetMusic/piano/repertoire/Chopin/Chopin_BalladeNo1_Op23_Piano.pdf`
+-   **Chamber:** `MySheetMusic/piano/chamber/Schubert/Schubert_PianoTrio_Op99_Piano.pdf`
+-   **Orchestra:** `MySheetMusic/piano/orchestra/Stravinsky/Stravinsky_Petrushka_Piano.pdf`
+-   **Studies:** `MySheetMusic/piano/studies/Czerny/Czerny_ArtOfFingerDexterity_Op740_No1_Piano.pdf`
+
 ## Installation
 
 The only dependency required to run this script is `exiftool`.
@@ -56,6 +93,10 @@ Once `exiftool` is installed, you can run the script directly.
     ```bash
     ./metadata_script.sh /path/to/your/pdfs
     ```
+
+## Important Note: Back Up Your Library
+
+It is strongly recommended to back up your forScore library regularly. While this script is designed to be safe, creating backups protects your data from accidental loss.
 
 ## Development
 

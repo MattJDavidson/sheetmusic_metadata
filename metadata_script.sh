@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Automates PDF metadata tagging via exiftool based on a filename schema.
 #
@@ -10,7 +10,7 @@
 # - `composer_data.sh` in the same directory.
 #
 # Usage:
-#   ./metadata_script.sh [directory_path]
+#   ./metadata_script.sh [-o /path/to/output_dir] [-t "Custom Tag 1"] [-t "Custom Tag 2"] [file_or_dir_path]
 #   If no directory is provided, it processes PDFs in the current directory.
 
 # --- Initial Checks ---
@@ -22,22 +22,16 @@ fi
 
 # --- Global Constants ---
 
-# Declare composer map to ensure it exists.
-declare -A composer_full_names
-
-# shellcheck disable=SC2034
-# Source composer data if map is not already populated (for testing).
-if [ ${#composer_full_names[@]} -eq 0 ]; then
-	# shellcheck disable=SC1090
-	source "${COMPOSER_NAMES_PATH:-$(dirname "${BASH_SOURCE[0]}")/composer_names.sh}" || {
-		echo "Error: composer_names.sh not found." >&2
-		echo "Please ensure it's in the same directory as the script or set COMPOSER_NAMES_PATH." >&2
-		exit 1
-	}
-fi
+# Source composer data unconditionally to populate the composer_full_names array.
+# shellcheck disable=SC1090
+source "$(dirname "${BASH_SOURCE[0]}")/composer_names.sh" || {
+	echo "Error: composer_names.sh not found." >&2
+	echo "Please ensure it's in the same directory as the script." >&2
+	exit 1
+}
 
 # This allows adding a broader instrument category tag in forScore.
-declare -A INSTRUMENT_FAMILIES
+declare -gA INSTRUMENT_FAMILIES
 INSTRUMENT_FAMILIES["Violin"]="Strings"
 INSTRUMENT_FAMILIES["Viola"]="Strings"
 INSTRUMENT_FAMILIES["Cello"]="Strings"
@@ -192,79 +186,136 @@ apply_pdf_metadata() {
 	local pdf_author="$3"
 	local pdf_subject="$4"
 	local pdf_keywords="$5"
+	local output_dir="$6" # Optional: directory to save the new file
 
-	exiftool \
-		-Title="$pdf_title" \
-		-Author="$pdf_author" \
-		-Subject="$pdf_subject" \
-		-Keywords="$pdf_keywords" \
-		-overwrite_original \
-		"$filepath"
+	local exiftool_args=(
+		-Title="$pdf_title"
+		-Author="$pdf_author"
+		-Subject="$pdf_subject"
+		-Keywords="$pdf_keywords"
+		-e
+	)
+
+	if [[ -n "$output_dir" ]]; then
+		# Ensure the output directory exists
+		mkdir -p "$output_dir"
+		# Add argument to write to a new file in the specified directory
+		exiftool_args+=(-o "$output_dir/%f.%e")
+	else
+		# Default behavior: overwrite the original file
+		exiftool_args+=(-overwrite_original)
+	fi
+
+	exiftool "${exiftool_args[@]}" "$filepath" >/dev/null
 
 	return $?
 }
 
-main() {
-	local target_dir="${1:-.}" # Defaults to current directory if no argument
+process_file() {
+	local filepath="$1"
+	local output_dir="$2"
+	shift 2
+	local additional_tags=("$@")
+	local filename
+	filename=$(basename "$filepath")
+	local filename_no_ext="${filename%.*}" # Remove .pdf extension
 
-	if [[ ! -d "$target_dir" ]]; then
-		echo "Error: Directory '$target_dir' not found." >&2
+	echo "Processing file: $filename"
+
+	if ! parse_filename_components "$filename_no_ext"; then
+		echo "  Skipping file due to parsing error." >&2
+		echo "---"
+		return 1
+	fi
+
+	local full_composer_name
+	full_composer_name=$(get_full_composer_name "$PARSED_COMPOSER_LAST_NAME")
+	local formatted_work_title
+	formatted_work_title=$(format_work_title "$PARSED_WORK_IDENTIFIER")
+	local formatted_part
+	formatted_part=$(format_part_string "$PARSED_PART")
+	local formatted_opus
+	formatted_opus=$(format_opus_string "$PARSED_OPUS")
+	local instrument_family_tag
+	instrument_family_tag=$(get_instrument_family "$formatted_part")
+
+	local PDF_TITLE="${formatted_work_title} - ${formatted_part} Part"
+	local all_keywords=("${DEFAULT_KEYWORDS}" "${formatted_part}" "${formatted_opus}" "${instrument_family_tag}")
+	all_keywords+=("${additional_tags[@]}")
+	local PDF_KEYWORDS
+	PDF_KEYWORDS=$(
+		IFS=,
+		echo "${all_keywords[*]}"
+	)
+
+	echo "Composer: $full_composer_name"
+	echo "Title: \"$PDF_TITLE\""
+	echo "Keywords (Tags): \"$PDF_KEYWORDS\""
+
+	if ! apply_pdf_metadata "$filepath" "$PDF_TITLE" "$full_composer_name" "$PDF_SUBJECT" "$PDF_KEYWORDS" "$output_dir"; then
+		echo "  Error: Failed to apply metadata to '$filename'." >&2
+		echo "---"
+		return 1
+	fi
+
+	echo "  Successfully applied metadata."
+	echo "---"
+	return 0
+}
+
+# --- Main Execution ---
+main() {
+	local output_dir=""
+	local -a additional_tags=()
+
+	# Parse options with getopts
+	while getopts ":o:t:" opt; do
+		case $opt in
+		o)
+			output_dir="$OPTARG"
+			;;
+		t)
+			additional_tags+=("$OPTARG")
+			;;
+		\?)
+			echo "Invalid option: -$OPTARG" >&2
+			exit 1
+			;;
+		:)
+			echo "Option -$OPTARG requires an argument." >&2
+			exit 1
+			;;
+		esac
+	done
+	shift $((OPTIND - 1))
+
+	local path="${1:-.}" # Default to current directory if no path is provided
+
+	if [[ ! -e "$path" ]]; then
+		echo "Error: File or directory not found at '$path'" >&2
 		exit 1
 	fi
 
-	echo "Starting metadata tagging for PDFs in: $target_dir"
-	echo "---"
-
-	find "$target_dir" -maxdepth 1 -type f -name "*.pdf" | while read -r filepath; do
-		local filename
-		filename=$(basename "$filepath")
-		local filename_no_ext="${filename%.*}" # Remove .pdf extension
-
-		echo "Processing file: $filename"
-
-		if ! parse_filename_components "$filename_no_ext"; then
-			echo "  Skipping file due to parsing error." >&2
-			echo "---"
-			continue
+	local overall_status=0
+	if [[ -f "$path" ]]; then
+		if ! process_file "$path" "$output_dir" "${additional_tags[@]}"; then
+			overall_status=1
 		fi
+	elif [[ -d "$path" ]]; then
+		echo "Processing all PDF files in directory: $path"
+		while IFS= read -r -d '' file; do
+			if ! process_file "$file" "$output_dir" "${additional_tags[@]}"; then
+				overall_status=1 # If any file fails, the final exit code will be 1
+			fi
+		done < <(find "$path" -maxdepth 1 -type f -name "*.pdf" -print0)
+	else
+		echo "Error: Path '$path' is not a file or a directory." >&2
+		exit 1
+	fi
 
-		local full_composer_name
-		full_composer_name=$(get_full_composer_name "$PARSED_COMPOSER_LAST_NAME")
-		local formatted_work_title
-		formatted_work_title=$(format_work_title "$PARSED_WORK_IDENTIFIER")
-		local formatted_part
-		formatted_part=$(format_part_string "$PARSED_PART")
-		local formatted_opus
-		formatted_opus=$(format_opus_string "$PARSED_OPUS")
-		local instrument_family_tag
-		instrument_family_tag=$(get_instrument_family "$formatted_part")
-
-		local PDF_TITLE="${formatted_work_title} - ${formatted_part} Part"
-		local PDF_KEYWORDS="${DEFAULT_KEYWORDS}, ${formatted_part}, ${formatted_opus}, ${instrument_family_tag}"
-
-		echo "  Composer: $full_composer_name"
-		echo "  Title: \"$PDF_TITLE\""
-		echo "  Subject (Genre): \"$PDF_SUBJECT\""
-		echo "  Keywords (Tags): \"$PDF_KEYWORDS\""
-
-		if apply_pdf_metadata \
-			"$filepath" \
-			"$PDF_TITLE" \
-			"$full_composer_name" \
-			"$PDF_SUBJECT" \
-			"$PDF_KEYWORDS"; then
-			echo "  Successfully tagged '$filename'."
-		else
-			echo "  Failed to tag '$filename'. Check exiftool output above for errors." >&2
-		fi
-		echo "---"
-	done
-
-	echo "Metadata tagging process complete."
-	echo "Remember to import these files into forScore with 'Automatic fetching for new files' enabled."
+	exit $overall_status
 }
 
-# Execute main only when script is run directly, not sourced.
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
 	main "$@"
 fi

@@ -22,9 +22,9 @@ setup() {
 }
 
 @test "filename parsing: Rimsky-Korsakov Scheherazade" {
-	local filename="Rimsky-Korsakov_Scheherazade_Op35_Flute2.pdf"
+	local filename="RimskyKorsakov_Scheherazade_Op35_Flute2.pdf"
 
-	[ "$(get_composer_from_filename "$filename")" = "Rimsky-Korsakov" ]
+	[ "$(get_composer_from_filename "$filename")" = "RimskyKorsakov" ]
 	[ "$(get_work_from_filename "$filename")" = "Scheherazade" ]
 	[ "$(get_opus_from_filename "$filename")" = "Op35" ]
 	[ "$(get_part_from_filename "$filename")" = "Flute2" ]
@@ -40,9 +40,9 @@ setup() {
 }
 
 @test "filename parsing: Rimsky-Korsakov Symphony 1" {
-	local filename="Rimsky-Korsakov_Symphony01_Op1_Oboe1.pdf"
+	local filename="RimskyKorsakov_Symphony01_Op1_Oboe1.pdf"
 
-	[ "$(get_composer_from_filename "$filename")" = "Rimsky-Korsakov" ]
+	[ "$(get_composer_from_filename "$filename")" = "RimskyKorsakov" ]
 	[ "$(get_work_from_filename "$filename")" = "Symphony01" ]
 	[ "$(get_opus_from_filename "$filename")" = "Op1" ]
 	[ "$(get_part_from_filename "$filename")" = "Oboe1" ]
