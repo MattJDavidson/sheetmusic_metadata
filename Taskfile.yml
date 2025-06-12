@@ -1,0 +1,53 @@
+version: '3'
+
+vars:
+  BATS_BIN: tests/bats/bin/bats
+
+tasks:
+  default:
+    desc: "Run all linting and tests for the project."
+    cmds:
+      - task: lint
+      - task: test
+
+  setup:
+    desc: "Set up the development environment by installing dependencies, submodules, and pre-commit hooks."
+    deps:
+      - check-deps
+    cmds:
+      - git submodule update --init --recursive
+      - pre-commit install
+    status:
+      # These checks ensure we don't re-run git submodule or pre-commit install unnecessarily.
+      - test -d tests/bats
+      - test -f .git/hooks/pre-commit
+
+  check-deps:
+    desc: "Check for and install missing tools (shellcheck, shfmt, exiftool)."
+    cmds:
+      - |
+        if ! command -v brew &> /dev/null; then
+          echo "Error: Homebrew is not installed. Please install Homebrew, or install dependencies manually." >&2
+          exit 1
+        fi
+        echo "Info: Installing dependencies with Homebrew..."
+        brew install shellcheck shfmt exiftool
+    status:
+      - command -v shellcheck >/dev/null 2>&1
+      - command -v shfmt >/dev/null 2>&1
+      - command -v exiftool >/dev/null 2>&1
+    silent: true
+
+  lint:
+    desc: "Run shellcheck and shfmt linters on all shell scripts."
+    deps:
+      - check-deps
+    cmds:
+      - pre-commit run --all-files
+
+  test:
+    desc: "Run the Bats test suite."
+    cmds:
+      - "{{.BATS_BIN}} tests"
+    deps:
+      - setup
