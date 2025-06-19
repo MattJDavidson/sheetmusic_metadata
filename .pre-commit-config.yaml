@@ -27,3 +27,10 @@ repos:
         types: [shell]
         args: ["-w"]
         description: "Formats shell scripts using the system's shfmt."
+
+      - id: csv-spacing
+        name: CSV Spacing
+        entry: ./fix_csv_spacing.sh
+        language: script
+        types: [csv]
+        description: "Fixes spacing in CSV files."

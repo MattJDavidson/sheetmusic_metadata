@@ -44,6 +44,7 @@ tasks:
       - check-deps
     cmds:
       - pre-commit run --all-files
+      - ./fix_csv_spacing.sh composers.csv
 
   test:
     desc: "Run the Bats test suite."
