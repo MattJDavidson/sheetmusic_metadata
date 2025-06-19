@@ -22,13 +22,14 @@ fi
 
 # --- Global Constants ---
 
-# Source composer data unconditionally to populate the composer_full_names array.
-# shellcheck disable=SC1090
-source "$(dirname "${BASH_SOURCE[0]}")/composer_names.sh" || {
-	echo "Error: composer_names.sh not found." >&2
-	echo "Please ensure it's in the same directory as the script." >&2
+# No longer sourcing composer_names.sh
+# The get_full_composer_name function will now read from composers.csv directly.
+COMPOSER_CSV_PATH="$(dirname "${BASH_SOURCE[0]}")/composers.csv"
+
+if [[ ! -f "$COMPOSER_CSV_PATH" ]]; then
+	echo "Error: composers.csv not found at $COMPOSER_CSV_PATH" >&2
 	exit 1
-}
+fi
 
 # This allows adding a broader instrument category tag in forScore.
 declare -gA INSTRUMENT_FAMILIES
@@ -130,7 +131,22 @@ parse_filename_components() {
 # Looks up the full composer name from a mapping.
 get_full_composer_name() {
 	local composer_last_name="$1"
-	local full_name="${composer_full_names[$composer_last_name]}"
+	local full_name=""
+
+	# Trim whitespace from the lookup key.
+	local clean_key
+	clean_key=$(echo "$composer_last_name" | sed 's/^[ \t]*//;s/[ \t]*$//')
+
+	# Read the CSV file line by line.
+	while IFS=, read -r key value; do
+		# Remove quotes from the key in the CSV.
+		csv_key=$(echo "$key" | tr -d '"')
+		if [[ -n "$csv_key" && -n "$clean_key" && ${csv_key,,} == "${clean_key,,}" ]]; then
+			# Remove quotes and leading/trailing whitespace from the value.
+			full_name=$(echo "$value" | tr -d '"' | sed 's/^[ \t]*//;s/[ \t]*$//')
+			break
+		fi
+	done <"$COMPOSER_CSV_PATH"
 
 	if [[ -z "$full_name" ]]; then
 		# Fallback: Capitalize first letter if not in map

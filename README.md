@@ -24,10 +24,10 @@ The script relies on a strict, underscore-separated filename schema to parse inf
 
 The script uses `exiftool` to write to standard PDF metadata fields. forScore reads these fields upon import to categorize your scores automatically. The mapping is based on the official [forScore PDF Metadata specification](https://forscore.co/developers-pdf-metadata/).
 
--   **PDF Title** is set to the formatted Work and Part (e.g., "Symphony 05 - Violin 1 Part").
+-   **PDF Title** is constructed as `Work Title - Part Name`.
 -   **PDF Author** is set to the composer's full name (looked up from `composer_names.sh`).
--   **PDF Subject** is set to "Orchestral", which becomes the **Genre** in forScore.
--   **PDF Keywords** are set to a comma-separated list including "Orchestral", the formatted part, the formatted opus, and the instrument family, which become **Tags** in forScore.
+-   **PDF Subject** is set to a default value (e.g., "Orchestral").
+-   **PDF Keywords** include the part name, opus number, and instrument family (e.g., "Strings", "Woodwind").
 
 ### Enabling Automatic Metadata Fetching in forScore
 

@@ -1,17 +1,10 @@
 #!/usr/bin/env bats
-# shellcheck disable=SC2154
+# shellcheck disable=SC1091,SC2154
 
-load 'test_helper.bash'
+load 'test_helper'
 
-# Load the script and its dependencies for direct function testing.
-setup() {
-	# Source the composer names to populate the array in this shell.
-	# shellcheck disable=SC1091
-	source "$BATS_TEST_DIRNAME/../composer_names.sh"
-	# Source the main script to get access to its functions.
-	# shellcheck disable=SC1091
-	source "$BATS_TEST_DIRNAME/../metadata_script.sh"
-}
+# Source the main script to have access to its functions.
+source "$BATS_TEST_DIRNAME/../metadata_script.sh"
 
 # Helper function to test the full metadata generation from a filename.
 # This tests the integration of parsing, formatting, and lookup functions.
@@ -53,7 +46,7 @@ run_metadata_generation_test() {
 @test "metadata generation: Beethoven Symphony 5" {
 	run_metadata_generation_test \
 		"Beethoven_Symphony05_Op67_Violin1.pdf" \
-		"Ludwig van Beethoven" \
+		"Beethoven, Ludwig van" \
 		"Symphony 05 - Violin 1 Part" \
 		"Orchestral,Violin 1,Op. 67,Strings"
 }
@@ -61,7 +54,7 @@ run_metadata_generation_test() {
 @test "metadata generation: Dvořák Symphony 9" {
 	run_metadata_generation_test \
 		"Dvorak_Symphony09_Op95_Cello.pdf" \
-		"Antonín Dvořák" \
+		"Dvořák, Antonín" \
 		"Symphony 09 - Cello Part" \
 		"Orchestral,Cello,Op. 95,Strings"
 }
@@ -69,7 +62,7 @@ run_metadata_generation_test() {
 @test "metadata generation: Tchaikovsky Symphony 6" {
 	run_metadata_generation_test \
 		"Tchaikovsky_Symphony06_Op74_Clarinet1.pdf" \
-		"Pyotr Ilyich Tchaikovsky" \
+		"Tchaikovsky, Pyotr Ilyich" \
 		"Symphony 06 - Clarinet 1 Part" \
 		"Orchestral,Clarinet 1,Op. 74,Woodwind"
 }
@@ -77,7 +70,7 @@ run_metadata_generation_test() {
 @test "metadata generation: Brahms Symphony 4" {
 	run_metadata_generation_test \
 		"Brahms_Symphony04_Op98_Oboe2.pdf" \
-		"Johannes Brahms" \
+		"Brahms, Johannes" \
 		"Symphony 04 - Oboe 2 Part" \
 		"Orchestral,Oboe 2,Op. 98,Woodwind"
 }
@@ -85,7 +78,7 @@ run_metadata_generation_test() {
 @test "metadata generation: Sibelius Violin Concerto" {
 	run_metadata_generation_test \
 		"Sibelius_ViolinConcerto_Op47_Trumpet1.pdf" \
-		"Jean Sibelius" \
+		"Sibelius, Jean" \
 		"Violin Concerto - Trumpet 1 Part" \
 		"Orchestral,Trumpet 1,Op. 47,Brass"
 }

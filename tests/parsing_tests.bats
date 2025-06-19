@@ -1,18 +1,14 @@
 #!/usr/bin/env bats
-# shellcheck disable=SC1091
+# shellcheck disable=SC1091,SC2154
 
-load 'test_helper.bash'
+load 'test_helper'
 
-setup() {
-	# Source the composer names to populate the array in this shell.
-	source "$BATS_TEST_DIRNAME/../composer_names.sh"
-	# Prevent the main script from sourcing the data file again.
-	export COMPOSER_NAMES_PATH="/dev/null"
-	# Source the main script to get access to its functions.
-	source "$BATS_TEST_DIRNAME/../metadata_script.sh"
-}
+# Source the main script to have access to its functions.
+source "$BATS_TEST_DIRNAME/../metadata_script.sh"
 
 @test "filename parsing: Beethoven Symphony 5" {
+	run parse_filename_components "Beethoven_Symphony05_Op67_Violin1"
+	[ "$status" -eq 0 ]
 	local filename="Beethoven_Symphony05_Op67_Violin1.pdf"
 
 	[ "$(get_composer_from_filename "$filename")" = "Beethoven" ]
