@@ -142,11 +142,11 @@ get_full_composer_name() {
 		# Remove quotes from the key in the CSV.
 		csv_key=$(echo "$key" | tr -d '"')
 		if [[ -n "$csv_key" && -n "$clean_key" && ${csv_key,,} == "${clean_key,,}" ]]; then
-			# Remove quotes and leading/trailing whitespace from the value.
-			full_name=$(echo "$value" | tr -d '"' | sed 's/^[ \t]*//;s/[ \t]*$//')
+			# Remove quotes, carriage returns, and leading/trailing whitespace from the value.
+			full_name=$(echo "$value" | tr -d '"\r' | sed 's/^[ \t]*//;s/[ \t]*$//')
 			break
 		fi
-	done <"$COMPOSER_CSV_PATH"
+	done < <(tail -n +2 "$COMPOSER_CSV_PATH")
 
 	if [[ -z "$full_name" ]]; then
 		# Fallback: Capitalize first letter if not in map
