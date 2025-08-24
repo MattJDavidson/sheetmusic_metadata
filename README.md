@@ -25,7 +25,7 @@ The script relies on a strict, underscore-separated filename schema to parse inf
 The script uses `exiftool` to write to standard PDF metadata fields. forScore reads these fields upon import to categorize your scores automatically. The mapping is based on the official [forScore PDF Metadata specification](https://forscore.co/developers-pdf-metadata/).
 
 -   **PDF Title** is constructed as `Work Title - Part Name`.
--   **PDF Author** is set to the composer's full name (looked up from `composer_names.sh`).
+-   **PDF Author** is set to the composer's full name (looked up from `composers.csv`).
 -   **PDF Subject** is set to a default value (e.g., "Orchestral").
 -   **PDF Keywords** include the part name, opus number, and instrument family (e.g., "Strings", "Woodwind").
 
@@ -35,40 +35,9 @@ To get the most out of this script, it is recommended to enable "automatic fetch
 
 For more details, please see the official [forScore documentation on metadata fetching](https://forscore.co/kb/fetching-pdf-metadata/).
 
-## Recommended Folder Structure
-
-While not required for the script to function, organizing your sheet music into a consistent folder structure is highly recommended for both manual browsing and automated processing. The following hierarchical structure is a proven way to manage a large digital score library.
-
-**`MySheetMusic/[Instrument]/[Category]/[Composer_LastName]/[Filename].pdf`**
-
-### Structure Breakdown
-
--   **`MySheetMusic/` (Root Directory)**: The main folder for your entire sheet music collection.
--   **`[Instrument]/`**: The first level organizes music by the primary instrument.
-    -   *Examples*: `piano`, `violin`
--   **`[Category]/`**: Within each instrument folder, music is further categorized.
-    -   *Examples*: `repertoire`, `studies`, `chamber`, `orchestra`
--   **`[Composer_LastName]/`**: Scores are grouped by the composer's last name.
-    -   *Examples*: `Beethoven`, `Czerny`, `Dvorak`
--   **`[Filename].pdf`**: The individual PDF file, named according to the script's convention.
-
-### Examples
-
-**Violin**
--   **Repertoire:** `MySheetMusic/violin/repertoire/Bach/Bach_SonataNo1_BWV1001_Violin.pdf`
--   **Chamber:** `MySheetMusic/violin/chamber/Beethoven/Beethoven_StringQuartet_Op18No4_Violin1.pdf`
--   **Orchestra:** `MySheetMusic/violin/orchestra/Dvorak/Dvorak_Symphony09_Op95_Violin1.pdf`
--   **Studies:** `MySheetMusic/violin/studies/Kreutzer/Kreutzer_42Studies_Violin.pdf`
-
-**Piano**
--   **Repertoire:** `MySheetMusic/piano/repertoire/Chopin/Chopin_BalladeNo1_Op23_Piano.pdf`
--   **Chamber:** `MySheetMusic/piano/chamber/Schubert/Schubert_PianoTrio_Op99_Piano.pdf`
--   **Orchestra:** `MySheetMusic/piano/orchestra/Stravinsky/Stravinsky_Petrushka_Piano.pdf`
--   **Studies:** `MySheetMusic/piano/studies/Czerny/Czerny_ArtOfFingerDexterity_Op740_No1_Piano.pdf`
-
 ## Installation
 
-The only dependency required to run this script is `exiftool`.
+The only external dependency required to run this script is `exiftool`.
 
 - **macOS (with Homebrew):**
   ```bash
@@ -77,21 +46,27 @@ The only dependency required to run this script is `exiftool`.
 - **Other Systems:**
   Please see the official [ExifTool installation instructions](https://exiftool.org/install.html).
 
+This project uses Python 3.13 and [`Taskfile`](https://taskfile.dev/) for dependency management and task running.
+
+1.  **Install `Taskfile`:**
+    Follow the [official installation instructions](https://taskfile.dev/installation/).
+
+2.  **Install dependencies:**
+    ```bash
+    task install-dev
+    ```
+
 ## Usage
 
-Once `exiftool` is installed, you can run the script directly.
+Once the dependencies are installed, you can run the script using `task`.
 
-1.  **Make the script executable:**
+1.  **Run on a single PDF file:**
     ```bash
-    chmod +x metadata_script.sh
+    task run -- process /path/to/your/file.pdf
     ```
-2.  **Run on PDFs in the current directory:**
+2.  **Run on all PDFs in a directory:**
     ```bash
-    ./metadata_script.sh
-    ```
-3.  **Run on PDFs in a specific directory:**
-    ```bash
-    ./metadata_script.sh /path/to/your/pdfs
+    task run -- process /path/to/your/pdfs/
     ```
 
 ## Important Note: Back Up Your Library
@@ -100,31 +75,15 @@ It is strongly recommended to back up your forScore library regularly. While thi
 
 ## Development
 
-Contributions to this project are welcome. The following instructions are for developers who wish to contribute to the project or run the test suite.
-
-This project uses [Taskfile](https://taskfile.dev/) for development task automation.
-
-### Developer Setup
-
-To set up the development environment, which includes installing linters (`shellcheck`, `shfmt`) and initializing the `bats` testing framework, run the following command:
-
-```bash
-task setup
-```
-
-This will ensure you have all the tools needed to contribute.
+This project uses `pytest` for testing, which can be run via `task`.
 
 ### Running Tests
 
-To run the full suite of linting and unit tests, use the `test` task:
+To run the full suite of unit tests, use the `task test` command:
 
 ```bash
 task test
 ```
-
-## Support
-
-This script is provided as-is. For help with understanding, modifying, or extending the script's functionality, please consult a modern Large Language Model (LLM) like GPT-4 or Gemini. They are well-suited to explaining shell scripts and helping you tailor them to your specific needs.
 
 ## Contributing
 

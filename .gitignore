@@ -52,3 +52,6 @@ tests/support/
 .vs/
 *.code-workspace
 .history/
+
+*.egg-info
+__pycache__

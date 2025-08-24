@@ -1,53 +1,45 @@
-version: '3'
+version: "3"
 
 vars:
-  BATS_BIN: tests/bats/bin/bats
+  PYTHON_VERSION: '{{.PYTHON_VERSION | default "3.13"}}'
 
 tasks:
   default:
-    desc: "Run all linting and tests for the project."
+    desc: "Install development dependencies and run all tests for the project."
     cmds:
-      - task: lint
+      - task: install-dev
       - task: test
 
-  setup:
-    desc: "Set up the development environment by installing dependencies, submodules, and pre-commit hooks."
-    deps:
-      - check-deps
+  install:
+    desc: "Install the project with production dependencies."
     cmds:
-      - git submodule update --init --recursive
-      - pre-commit install
+      - . .venv/bin/activate && uv pip install -e .
     status:
-      # These checks ensure we don't re-run git submodule or pre-commit install unnecessarily.
-      - test -d tests/bats
-      - test -f .git/hooks/pre-commit
+      - test -d .venv
 
-  check-deps:
-    desc: "Check for and install missing tools (shellcheck, shfmt, exiftool)."
+  install-dev:
+    desc: "Install the project with development dependencies."
     cmds:
-      - |
-        if ! command -v brew &> /dev/null; then
-          echo "Error: Homebrew is not installed. Please install Homebrew, or install dependencies manually." >&2
-          exit 1
-        fi
-        echo "Info: Installing dependencies with Homebrew..."
-        brew install shellcheck shfmt exiftool
+      - python{{.PYTHON_VERSION}} -m venv .venv
+      - . .venv/bin/activate && uv pip install -e '.[dev]'
     status:
-      - command -v shellcheck >/dev/null 2>&1
-      - command -v shfmt >/dev/null 2>&1
-      - command -v exiftool >/dev/null 2>&1
-    silent: true
+      - test -d .venv
 
-  lint:
-    desc: "Run shellcheck and shfmt linters on all shell scripts."
-    deps:
-      - check-deps
+  run:
+    desc: "Run the sheetmusic-metadata CLI tool."
     cmds:
-      - pre-commit run --all-files
+      - . .venv/bin/activate && sheetmusic-metadata
 
   test:
-    desc: "Run the Bats test suite."
+    desc: "Run the pytest test suite."
     cmds:
-      - "{{.BATS_BIN}} tests"
-    deps:
-      - setup
+      - . .venv/bin/activate && pytest
+
+  clean:
+    desc: "Remove temporary files and the virtual environment."
+    cmds:
+      - rm -rf .venv
+      - rm -rf .pytest_cache
+      - rm -rf .ruff_cache
+      - find . -type f -name '*.pyc' -delete
+      - find . -type d -name '__pycache__' -delete

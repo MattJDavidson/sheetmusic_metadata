@@ -1,1 +1,0 @@
-load 'support/load.bash'

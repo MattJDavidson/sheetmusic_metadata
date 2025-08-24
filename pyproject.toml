@@ -1,0 +1,52 @@
+[project]
+name = "sheetmusic-metadata"
+version = "0.1.0"
+description = "A tool for setting sheetmusic PDF metadata based on a file naming convention."
+authors = [{name = "Gemini"}]
+requires-python = ">=3.13"
+dependencies = [
+    "pyarrow",
+    "rich",
+    "click",
+    "pydantic",
+]
+
+[project.scripts]
+sheetmusic-metadata = "app.entrypoints.cli:cli"
+
+[tool.setuptools.packages.find]
+include = ["app*", "core*"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-xdist>=3.0.0",
+    "mypy>=1.0.0",
+    "ruff>=0.1.0",
+    "isort>=5.0.0",
+    "pre-commit>=3.0.0",
+    "time-machine",
+    "httpx",
+]
+
+[tool.ruff]
+line-length = 88
+include = ["app/**/*.py", "tests/**/*.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[tool.mypy]
+mypy_path = "app"
+check_untyped_defs = true
+disallow_any_generics = true
+ignore_missing_imports = true
+no_implicit_optional = true
+show_error_codes = true
+strict_equality = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unreachable = true
+warn_unused_configs = true
+warn_unused_ignores = true
