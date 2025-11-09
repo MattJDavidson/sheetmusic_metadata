@@ -1,3 +1,0 @@
-[submodule "tests/support"]
-	path = tests/support
-	url = https://github.com/bats-core/bats-support.git
