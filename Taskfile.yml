@@ -1,8 +1,5 @@
 version: '3'
 
-vars:
-  BATS_BIN: tests/bats/bin/bats
-
 tasks:
   default:
     desc: "Run all linting and tests for the project."
@@ -11,19 +8,17 @@ tasks:
       - task: test
 
   setup:
-    desc: "Set up the development environment by installing dependencies, submodules, and pre-commit hooks."
+    desc: "Set up the development environment by installing dependencies with uv."
     deps:
       - check-deps
     cmds:
-      - git submodule update --init --recursive
-      - pre-commit install
+      - uv sync --extra dev
     status:
-      # These checks ensure we don't re-run git submodule or pre-commit install unnecessarily.
-      - test -d tests/bats
-      - test -f .git/hooks/pre-commit
+      # Check if virtual environment exists
+      - test -d .venv
 
   check-deps:
-    desc: "Check for and install missing tools (shellcheck, shfmt, exiftool)."
+    desc: "Check for and install missing tools (Python 3.13, uv, exiftool)."
     cmds:
       - |
         if ! command -v brew &> /dev/null; then
@@ -31,23 +26,61 @@ tasks:
           exit 1
         fi
         echo "Info: Installing dependencies with Homebrew..."
-        brew install shellcheck shfmt exiftool
+        brew install exiftool
+        if ! command -v uv &> /dev/null; then
+          echo "Info: Installing uv..."
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+        fi
     status:
-      - command -v shellcheck >/dev/null 2>&1
-      - command -v shfmt >/dev/null 2>&1
+      - command -v python3.13 >/dev/null 2>&1
+      - command -v uv >/dev/null 2>&1
       - command -v exiftool >/dev/null 2>&1
     silent: true
 
   lint:
-    desc: "Run shellcheck and shfmt linters on all shell scripts."
-    deps:
-      - check-deps
-    cmds:
-      - pre-commit run --all-files
-
-  test:
-    desc: "Run the Bats test suite."
-    cmds:
-      - "{{.BATS_BIN}} tests"
+    desc: "Run Python linters (ruff if available)."
     deps:
       - setup
+    cmds:
+      - |
+        if uv run python -c "import ruff" 2>/dev/null; then
+          uv run ruff check sheetmusic_metadata tests
+          uv run ruff format --check sheetmusic_metadata tests
+        else
+          echo "Note: ruff not installed. Skipping linting. Install with: uv add --dev ruff"
+        fi
+
+  test:
+    desc: "Run the pytest test suite."
+    deps:
+      - setup
+    cmds:
+      - uv run pytest tests/ -v
+
+  test-integration:
+    desc: "Run only integration tests (requires exiftool)."
+    deps:
+      - setup
+    cmds:
+      - uv run pytest tests/test_pdf_integration.py -v
+
+  test-unit:
+    desc: "Run only unit tests (no exiftool required)."
+    deps:
+      - setup
+    cmds:
+      - uv run pytest tests/ -v -k "not integration"
+
+  install:
+    desc: "Install the package in development mode."
+    deps:
+      - setup
+    cmds:
+      - uv pip install -e .
+
+  run:
+    desc: "Run the CLI tool (usage: task run -- [args] or task run)."
+    deps:
+      - setup
+    cmds:
+      - uv run sheetmusic-metadata {{if .CLI_ARGS}}{{.CLI_ARGS}}{{end}}
