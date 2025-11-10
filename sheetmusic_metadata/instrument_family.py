@@ -1,7 +1,5 @@
 """Instrument family mapping for tagging."""
 
-import sys
-
 # Mapping of base instrument names to their families
 INSTRUMENT_FAMILIES: dict[str, str] = {
     "Violin": "Strings",

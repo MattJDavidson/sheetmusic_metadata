@@ -16,8 +16,10 @@ def minimal_pdf():
     """Get path to minimal test PDF."""
     # Try simple.pdf first (downloaded valid PDF), fallback to minimal.pdf
     simple_pdf = Path(__file__).parent.parent / "tests" / "support" / "simple.pdf"
-    minimal_pdf_path = Path(__file__).parent.parent / "tests" / "support" / "minimal.pdf"
-    
+    minimal_pdf_path = (
+        Path(__file__).parent.parent / "tests" / "support" / "minimal.pdf"
+    )
+
     if simple_pdf.exists():
         return simple_pdf
     elif minimal_pdf_path.exists():
@@ -57,7 +59,9 @@ def test_pdf_metadata_writing_overwrite_original(minimal_pdf, composer_lookup):
 
         # Verify the metadata was written correctly
         assert metadata["Title"] == "Symphony 05 - Violin 1 Part"
-        assert metadata["Author"] == "Beethoven, Ludwig van"
+        assert (
+            metadata["Author"] == "Beethoven Ludwig van"
+        )  # Space-separated for forScore compatibility
         assert metadata["Subject"] == "Orchestral"
         assert "Orchestral" in metadata["Keywords"]
         assert "Violin 1" in metadata["Keywords"]
@@ -97,7 +101,9 @@ def test_pdf_metadata_writing_output_directory(minimal_pdf, composer_lookup):
 
         # Verify the metadata was written correctly
         assert metadata["Title"] == "Symphony 09 - Cello Part"
-        assert metadata["Author"] == "Dvořák, Antonín"
+        assert (
+            metadata["Author"] == "Antonín Dvořák"
+        )  # FirstName Surname for forScore sorting
         assert metadata["Subject"] == "Orchestral"
         assert "Orchestral" in metadata["Keywords"]
         assert "Cello" in metadata["Keywords"]
@@ -132,7 +138,9 @@ def test_pdf_metadata_writing_with_custom_tags(minimal_pdf, composer_lookup):
 
         # Verify the metadata was written correctly
         assert metadata["Title"] == "Symphony 04 - Oboe 2 Part"
-        assert metadata["Author"] == "Brahms, Johannes"
+        assert (
+            metadata["Author"] == "Johannes Brahms"
+        )  # FirstName Surname for forScore sorting
         assert metadata["Subject"] == "Orchestral"
         keywords = metadata["Keywords"]
         assert "Orchestral" in keywords
@@ -164,7 +172,9 @@ def test_pdf_metadata_writing_3_part_schema(minimal_pdf, composer_lookup):
 
         # Verify the metadata was written correctly
         assert metadata["Title"] == "Lark Ascending - Viola Part"
-        assert metadata["Author"] == "Vaughan Williams, Ralph"
+        assert (
+            metadata["Author"] == "Ralph Vaughan Williams"
+        )  # FirstName Surname for forScore sorting
         assert metadata["Subject"] == "Orchestral"
         keywords = metadata["Keywords"]
         assert "Orchestral" in keywords

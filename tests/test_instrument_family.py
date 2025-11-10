@@ -1,72 +1,34 @@
 """Tests for instrument family mapping."""
 
+import pytest
+
 from sheetmusic_metadata.instrument_family import get_instrument_family
 
 
-def test_get_instrument_family_violin():
-    """Test violin maps to Strings."""
-    result = get_instrument_family("Violin 1")
-    assert result == "Strings"
+@pytest.mark.parametrize(
+    "instrument,expected_family",
+    [
+        ("Violin 1", "Strings"),
+        ("Cello", "Strings"),
+        ("Double Bass", "Strings"),
+        ("Flute 2", "Woodwind"),
+        ("Clarinet 1", "Woodwind"),
+        ("Trumpet 1", "Brass"),
+        ("Horn", "Brass"),
+        ("Timpani", "Percussion"),
+        ("Harp", "Harp"),
+        ("Piano", "Keyboard"),
+    ],
+)
+def test_get_instrument_family(instrument, expected_family):
+    """Test instrument family mapping for various instruments."""
+    result = get_instrument_family(instrument)
+    assert result == expected_family
 
 
-def test_get_instrument_family_cello():
-    """Test cello maps to Strings."""
-    result = get_instrument_family("Cello")
-    assert result == "Strings"
-
-
-def test_get_instrument_family_flute():
-    """Test flute maps to Woodwind."""
-    result = get_instrument_family("Flute 2")
-    assert result == "Woodwind"
-
-
-def test_get_instrument_family_clarinet():
-    """Test clarinet maps to Woodwind."""
-    result = get_instrument_family("Clarinet 1")
-    assert result == "Woodwind"
-
-
-def test_get_instrument_family_trumpet():
-    """Test trumpet maps to Brass."""
-    result = get_instrument_family("Trumpet 1")
-    assert result == "Brass"
-
-
-def test_get_instrument_family_horn():
-    """Test horn maps to Brass."""
-    result = get_instrument_family("Horn")
-    assert result == "Brass"
-
-
-def test_get_instrument_family_timpani():
-    """Test timpani maps to Percussion."""
-    result = get_instrument_family("Timpani")
-    assert result == "Percussion"
-
-
-def test_get_instrument_family_harp():
-    """Test harp maps to Harp."""
-    result = get_instrument_family("Harp")
-    assert result == "Harp"
-
-
-def test_get_instrument_family_piano():
-    """Test piano maps to Keyboard."""
-    result = get_instrument_family("Piano")
-    assert result == "Keyboard"
-
-
-def test_get_instrument_family_double_bass():
-    """Test double bass maps to Strings."""
-    result = get_instrument_family("Double Bass")
-    assert result == "Strings"
-
-
-def test_get_instrument_family_unknown_instrument(capsys):
+def test_get_instrument_family_unknown_instrument():
     """Test unknown instrument falls back to base name."""
     result = get_instrument_family("UnknownInstrument 1")
     assert result == "UnknownInstrument"
-    captured = __import__("sys").stderr
-    # Note: capsys doesn't capture print to sys.stderr directly,
-    # but we can verify the fallback behavior
+    # Note: The function may print warnings to stderr, but we verify
+    # the fallback behavior by checking the return value

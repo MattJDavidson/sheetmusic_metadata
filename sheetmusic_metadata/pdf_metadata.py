@@ -5,6 +5,36 @@ import sys
 from pathlib import Path
 
 
+def _get_unique_output_path(output_dir: Path, filename: str) -> tuple[Path, bool]:
+    """
+    Get a unique output path, appending (1), (2), etc. if file exists.
+
+    Args:
+        output_dir: Directory to write the file to
+        filename: Original filename
+
+    Returns:
+        Tuple of (output_path, was_conflict) where was_conflict is True if
+        the file already existed and a suffix was added
+    """
+    output_path = output_dir / filename
+
+    if not output_path.exists():
+        return (output_path, False)
+
+    # File exists, need to add suffix
+    stem = output_path.stem
+    suffix = output_path.suffix
+    counter = 1
+
+    while True:
+        new_filename = f"{stem} ({counter}){suffix}"
+        new_path = output_dir / new_filename
+        if not new_path.exists():
+            return (new_path, True)
+        counter += 1
+
+
 def apply_pdf_metadata(
     filepath: Path,
     pdf_title: str,
@@ -12,7 +42,7 @@ def apply_pdf_metadata(
     pdf_subject: str,
     pdf_keywords: str,
     output_dir: Path | None = None,
-) -> None:
+) -> Path:
     """
     Apply metadata to a PDF file using exiftool.
 
@@ -24,6 +54,9 @@ def apply_pdf_metadata(
         pdf_keywords: PDF Keywords metadata (comma-separated)
         output_dir: Optional directory to write output file to.
                     If None, overwrites the original file.
+
+    Returns:
+        Path to the output file (same as input if overwriting, or new path if output_dir specified)
 
     Raises:
         FileNotFoundError: If exiftool is not installed
@@ -54,11 +87,21 @@ def apply_pdf_metadata(
     if output_dir is not None:
         # Ensure the output directory exists
         output_dir.mkdir(parents=True, exist_ok=True)
+        # Get unique output path (handle conflicts)
+        output_path, was_conflict = _get_unique_output_path(output_dir, filepath.name)
+        if was_conflict:
+            print(
+                f"  Warning: File '{filepath.name}' already exists in output directory. "
+                f"Writing to '{output_path.name}' instead.",
+                file=sys.stderr,
+            )
         # Write to a new file in the specified directory
-        exiftool_args.extend(["-o", str(output_dir / f"{filepath.name}")])
+        exiftool_args.extend(["-o", str(output_path)])
+        final_output_path = output_path
     else:
         # Default behavior: overwrite the original file
         exiftool_args.append("-overwrite_original")
+        final_output_path = filepath
 
     exiftool_args.append(str(filepath))
 
@@ -87,15 +130,20 @@ def apply_pdf_metadata(
         # Check if file was actually updated
         elif "files updated" not in result.stdout:
             # No success message and non-zero return code - likely an error
-            if "files weren't updated" in result.stdout or "could not be read" in result.stdout:
+            if (
+                "files weren't updated" in result.stdout
+                or "could not be read" in result.stdout
+            ):
                 has_error = True
-    
+
     if has_error:
         raise subprocess.CalledProcessError(
             result.returncode,
             ["exiftool"] + exiftool_args,
             result.stderr + "\n" + result.stdout,
         )
+
+    return final_output_path
 
 
 def read_pdf_metadata(filepath: Path) -> dict[str, str]:

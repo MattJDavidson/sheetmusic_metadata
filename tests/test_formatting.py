@@ -1,5 +1,7 @@
 """Tests for formatting functions."""
 
+import pytest
+
 from sheetmusic_metadata.formatting import (
     format_opus_string,
     format_part_string,
@@ -7,73 +9,46 @@ from sheetmusic_metadata.formatting import (
 )
 
 
-def test_format_work_title_adds_leading_zero_to_single_digit():
-    """Test adds leading zero to single-digit numbers."""
-    result = format_work_title("Symphony5")
-    assert result == "Symphony 05"
+@pytest.mark.parametrize(
+    "input_title,expected_output",
+    [
+        ("Symphony5", "Symphony 05"),  # Adds leading zero to single digit
+        ("Symphony09", "Symphony 09"),  # Preserves double digit
+        ("ViolinConcerto", "Violin Concerto"),  # Adds space for camelCase
+        ("ViolinConcertoNo1", "Violin Concerto No 01"),  # Handles multiple camelCase
+    ],
+)
+def test_format_work_title(input_title, expected_output):
+    """Test work title formatting with various inputs."""
+    result = format_work_title(input_title)
+    assert result == expected_output
 
 
-def test_format_work_title_preserves_double_digit_numbers():
-    """Test preserves double-digit numbers."""
-    result = format_work_title("Symphony09")
-    assert result == "Symphony 09"
+@pytest.mark.parametrize(
+    "input_opus,expected_output",
+    [
+        ("Op1", "Op. 1"),  # Single digit opus
+        ("Op67", "Op. 67"),  # Double digit opus
+        ("NoOp", "NoOp"),  # No opus
+    ],
+)
+def test_format_opus_string(input_opus, expected_output):
+    """Test opus string formatting with various inputs."""
+    result = format_opus_string(input_opus)
+    assert result == expected_output
 
 
-def test_format_work_title_adds_space_for_camelcase():
-    """Test adds space for camelCase."""
-    result = format_work_title("ViolinConcerto")
-    assert result == "Violin Concerto"
-
-
-def test_format_work_title_handles_multiple_camelcase():
-    """Test handles multiple camelCase words."""
-    result = format_work_title("ViolinConcertoNo1")
-    assert result == "Violin Concerto No 01"
-
-
-def test_format_opus_string_handles_single_digit_opus():
-    """Test handles single-digit opus numbers."""
-    result = format_opus_string("Op1")
-    assert result == "Op. 1"
-
-
-def test_format_opus_string_handles_double_digit_opus():
-    """Test handles double-digit opus numbers."""
-    result = format_opus_string("Op67")
-    assert result == "Op. 67"
-
-
-def test_format_opus_string_handles_no_opus():
-    """Test handles NoOp."""
-    result = format_opus_string("NoOp")
-    assert result == "NoOp"
-
-
-def test_format_part_string_adds_space_before_numbers():
-    """Test adds space before numbers."""
-    result = format_part_string("Violin1")
-    assert result == "Violin 1"
-
-
-def test_format_part_string_handles_double_bass():
-    """Test handles DoubleBass special case."""
-    result = format_part_string("DoubleBass")
-    assert result == "Double Bass"
-
-
-def test_format_part_string_handles_english_horn():
-    """Test handles EnglishHorn special case."""
-    result = format_part_string("EnglishHorn")
-    assert result == "English Horn"
-
-
-def test_format_part_string_handles_piccolo():
-    """Test handles Piccolo special case."""
-    result = format_part_string("Piccolo")
-    assert result == " Piccolo"
-
-
-def test_format_part_string_handles_multiple_numbers():
-    """Test handles multiple numbers."""
-    result = format_part_string("Violin1Part2")
-    assert result == "Violin 1Part 2"
+@pytest.mark.parametrize(
+    "input_part,expected_output",
+    [
+        ("Violin1", "Violin 1"),  # Adds space before numbers
+        ("DoubleBass", "Double Bass"),  # Special case: DoubleBass
+        ("EnglishHorn", "English Horn"),  # Special case: EnglishHorn
+        ("Piccolo", " Piccolo"),  # Special case: Piccolo (leading space)
+        ("Violin1Part2", "Violin 1Part 2"),  # Multiple numbers
+    ],
+)
+def test_format_part_string(input_part, expected_output):
+    """Test part string formatting with various inputs."""
+    result = format_part_string(input_part)
+    assert result == expected_output

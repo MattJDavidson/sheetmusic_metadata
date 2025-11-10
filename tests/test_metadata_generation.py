@@ -67,56 +67,49 @@ def run_metadata_generation_test(
     assert actual_keywords == expected_keywords
 
 
-def test_metadata_generation_beethoven_symphony_5(composer_lookup):
-    """Test metadata generation: Beethoven Symphony 5."""
+@pytest.mark.parametrize(
+    "filename,expected_composer,expected_title,expected_keywords",
+    [
+        (
+            "Beethoven_Symphony05_Op67_Violin1.pdf",
+            "Beethoven, Ludwig van",
+            "Symphony 05 - Violin 1 Part",
+            "Orchestral,Violin 1,Op. 67,Strings",
+        ),
+        (
+            "Dvorak_Symphony09_Op95_Cello.pdf",
+            "Dvořák, Antonín",
+            "Symphony 09 - Cello Part",
+            "Orchestral,Cello,Op. 95,Strings",
+        ),
+        (
+            "Tchaikovsky_Symphony06_Op74_Clarinet1.pdf",
+            "Tchaikovsky, Pyotr Ilyich",
+            "Symphony 06 - Clarinet 1 Part",
+            "Orchestral,Clarinet 1,Op. 74,Woodwind",
+        ),
+        (
+            "Brahms_Symphony04_Op98_Oboe2.pdf",
+            "Brahms, Johannes",
+            "Symphony 04 - Oboe 2 Part",
+            "Orchestral,Oboe 2,Op. 98,Woodwind",
+        ),
+        (
+            "Sibelius_ViolinConcerto_Op47_Trumpet1.pdf",
+            "Sibelius, Jean",
+            "Violin Concerto - Trumpet 1 Part",
+            "Orchestral,Trumpet 1,Op. 47,Brass",
+        ),
+    ],
+)
+def test_metadata_generation(
+    composer_lookup, filename, expected_composer, expected_title, expected_keywords
+):
+    """Test metadata generation for various composers and works."""
     run_metadata_generation_test(
-        "Beethoven_Symphony05_Op67_Violin1.pdf",
-        "Beethoven, Ludwig van",
-        "Symphony 05 - Violin 1 Part",
-        "Orchestral,Violin 1,Op. 67,Strings",
-        composer_lookup,
-    )
-
-
-def test_metadata_generation_dvorak_symphony_9(composer_lookup):
-    """Test metadata generation: Dvo??k Symphony 9."""
-    run_metadata_generation_test(
-        "Dvorak_Symphony09_Op95_Cello.pdf",
-        "Dvořák, Antonín",
-        "Symphony 09 - Cello Part",
-        "Orchestral,Cello,Op. 95,Strings",
-        composer_lookup,
-    )
-
-
-def test_metadata_generation_tchaikovsky_symphony_6(composer_lookup):
-    """Test metadata generation: Tchaikovsky Symphony 6."""
-    run_metadata_generation_test(
-        "Tchaikovsky_Symphony06_Op74_Clarinet1.pdf",
-        "Tchaikovsky, Pyotr Ilyich",
-        "Symphony 06 - Clarinet 1 Part",
-        "Orchestral,Clarinet 1,Op. 74,Woodwind",
-        composer_lookup,
-    )
-
-
-def test_metadata_generation_brahms_symphony_4(composer_lookup):
-    """Test metadata generation: Brahms Symphony 4."""
-    run_metadata_generation_test(
-        "Brahms_Symphony04_Op98_Oboe2.pdf",
-        "Brahms, Johannes",
-        "Symphony 04 - Oboe 2 Part",
-        "Orchestral,Oboe 2,Op. 98,Woodwind",
-        composer_lookup,
-    )
-
-
-def test_metadata_generation_sibelius_violin_concerto(composer_lookup):
-    """Test metadata generation: Sibelius Violin Concerto."""
-    run_metadata_generation_test(
-        "Sibelius_ViolinConcerto_Op47_Trumpet1.pdf",
-        "Sibelius, Jean",
-        "Violin Concerto - Trumpet 1 Part",
-        "Orchestral,Trumpet 1,Op. 47,Brass",
+        filename,
+        expected_composer,
+        expected_title,
+        expected_keywords,
         composer_lookup,
     )

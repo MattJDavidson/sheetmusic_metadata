@@ -22,4 +22,6 @@ python_functions = ["test_*"]
 python_classes = ["Test*"]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0.0", "pytest-cov>=4.1.0"]
+dev = ["pytest>=8.0.0", "pytest-cov>=4.1.0", "pytest-xdist>=3.0.0", "pre-commit>=3.0.0"]
+lint = ["ruff>=0.1.0"]
+test = ["pytest>=8.0.0", "pytest-cov>=4.1.0", "pytest-xdist>=3.0.0"]

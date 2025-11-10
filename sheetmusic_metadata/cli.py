@@ -12,7 +12,7 @@ from sheetmusic_metadata.formatting import (
     format_work_title,
 )
 from sheetmusic_metadata.instrument_family import get_instrument_family
-from sheetmusic_metadata.parsing import FilenameComponents, parse_filename
+from sheetmusic_metadata.parsing import parse_filename
 from sheetmusic_metadata.pdf_metadata import apply_pdf_metadata
 
 
@@ -21,7 +21,7 @@ def process_file(
     composer_lookup: ComposerLookup,
     output_dir: Path | None = None,
     additional_tags: list[str] | None = None,
-) -> None:
+) -> Path:
     """
     Process a single PDF file and apply metadata.
 
@@ -47,8 +47,8 @@ def process_file(
         print("---")
         raise
 
-    # Lookup composer name
-    full_composer_name = composer_lookup.get_full_name(
+    # Lookup composer name (use PDF-compatible format to avoid forScore splitting on commas)
+    full_composer_name = composer_lookup.get_full_name_for_pdf(
         components.composer_last_name
     )
 
@@ -76,7 +76,7 @@ def process_file(
     print(f'Keywords (Tags): "{pdf_keywords}"')
 
     try:
-        apply_pdf_metadata(
+        output_path = apply_pdf_metadata(
             filepath,
             pdf_title,
             full_composer_name,
@@ -92,14 +92,22 @@ def process_file(
         raise
 
     print("---")
+    return output_path
 
 
 @click.command()
 @click.option(
+    "-i",
+    "--input-dir",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
+    help="Input directory containing PDF files to process",
+)
+@click.option(
     "-o",
     "--output-dir",
-    type=click.Path(path_type=Path),
-    help="Write output files to a specified directory instead of overwriting originals",
+    type=click.Path(file_okay=False, dir_okay=True, path_type=Path),
+    required=True,
+    help="Output directory to write processed PDF files (required when using --input-dir)",
 )
 @click.option(
     "-t",
@@ -108,12 +116,6 @@ def process_file(
     multiple=True,
     help="Add custom tags to the keywords field (can be used multiple times)",
 )
-@click.argument(
-    "path",
-    type=click.Path(exists=True, path_type=Path),
-    default=".",
-    required=False,
-)
 @click.option(
     "--composers-csv",
     type=click.Path(exists=True, path_type=Path),
@@ -121,9 +123,9 @@ def process_file(
     help="Path to composers.csv file (defaults to composers.csv in script directory)",
 )
 def main(
-    output_dir: Path | None,
+    input_dir: Path | None,
+    output_dir: Path,
     additional_tags: tuple[str, ...],
-    path: Path,
     composers_csv: Path | None,
 ) -> None:
     """
@@ -132,7 +134,8 @@ def main(
     Schema: ComposerLastName_WorkIdentifier_Opus_Part.pdf
     Example: Dvorak_Symphony09_Op95_Violin1.pdf
 
-    If no path is provided, processes PDFs in the current directory.
+    Processes all PDF files in the input directory and writes them to the output directory.
+    If a file already exists in the output directory, a (1), (2), etc. suffix will be added.
     """
     # Determine composers.csv path
     if composers_csv is None:
@@ -154,33 +157,50 @@ def main(
         click.echo(f"Error: Failed to load composers.csv: {e}", err=True)
         sys.exit(1)
 
+    # Validate input directory
+    if input_dir is None:
+        click.echo(
+            "Error: --input-dir is required. Use --input-dir to specify the directory containing PDF files.",
+            err=True,
+        )
+        sys.exit(1)
+
+    if not input_dir.is_dir():
+        click.echo(
+            f"Error: Input directory '{input_dir}' does not exist or is not a directory.",
+            err=True,
+        )
+        sys.exit(1)
+
+    # Create output directory if it doesn't exist
+    try:
+        output_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as e:
+        click.echo(
+            f"Error: Failed to create output directory '{output_dir}': {e}", err=True
+        )
+        sys.exit(1)
+
     # Convert additional_tags tuple to list
     tags_list = list(additional_tags) if additional_tags else None
 
     overall_status = 0
 
     try:
-        if path.is_file():
-            # Process single file
-            process_file(path, composer_lookup, output_dir, tags_list)
-        elif path.is_dir():
-            # Process all PDF files in directory
-            click.echo(f"Processing all PDF files in directory: {path}")
-            pdf_files = list(path.glob("*.pdf"))
-            if not pdf_files:
-                click.echo(f"No PDF files found in {path}")
-                return
+        # Process all PDF files in input directory
+        click.echo(f"Processing all PDF files in directory: {input_dir}")
+        pdf_files = list(input_dir.glob("*.pdf"))
+        if not pdf_files:
+            click.echo(f"No PDF files found in {input_dir}")
+            return
 
-            for pdf_file in sorted(pdf_files):
-                try:
-                    process_file(pdf_file, composer_lookup, output_dir, tags_list)
-                except Exception:
-                    overall_status = 1
-                    # Early exit on error (as per requirements)
-                    sys.exit(1)
-        else:
-            click.echo(f"Error: Path '{path}' is not a file or a directory.", err=True)
-            sys.exit(1)
+        for pdf_file in sorted(pdf_files):
+            try:
+                process_file(pdf_file, composer_lookup, output_dir, tags_list)
+            except Exception:
+                overall_status = 1
+                # Early exit on error (as per requirements)
+                sys.exit(1)
     except KeyboardInterrupt:
         click.echo("\nInterrupted by user", err=True)
         sys.exit(130)

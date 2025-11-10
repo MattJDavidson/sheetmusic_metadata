@@ -22,18 +22,20 @@ Dvorak,"Dvo??k, Anton?n"
     return csv_file
 
 
-def test_get_full_name_bach(sample_composers_csv):
-    """Test lookup 'Bach' and get 'Bach, Johann Sebastian'."""
+@pytest.mark.parametrize(
+    "surname,expected_full_name",
+    [
+        ("Bach", "Bach, Johann Sebastian"),
+        ("Beethoven", "Beethoven, Ludwig van"),
+    ],
+)
+def test_get_full_name_valid_composers(
+    sample_composers_csv, surname, expected_full_name
+):
+    """Test lookup of valid composer surnames."""
     lookup = ComposerLookup(sample_composers_csv)
-    result = lookup.get_full_name("Bach")
-    assert result == "Bach, Johann Sebastian"
-
-
-def test_get_full_name_beethoven(sample_composers_csv):
-    """Test lookup 'Beethoven' and get 'Beethoven, Ludwig van'."""
-    lookup = ComposerLookup(sample_composers_csv)
-    result = lookup.get_full_name("Beethoven")
-    assert result == "Beethoven, Ludwig van"
+    result = lookup.get_full_name(surname)
+    assert result == expected_full_name
 
 
 def test_get_full_name_fallback_unknown_composer(sample_composers_csv, capsys):
@@ -46,18 +48,22 @@ def test_get_full_name_fallback_unknown_composer(sample_composers_csv, capsys):
     assert "UnknownComposer" in captured.err
 
 
-def test_get_full_name_handles_whitespace(sample_composers_csv):
-    """Test handles leading/trailing whitespace in lookup key."""
+@pytest.mark.parametrize(
+    "surname_input,expected_full_name",
+    [
+        ("  Brahms  ", "Brahms, Johannes"),  # Whitespace handling
+        ("BEETHOVEN", "Beethoven, Ludwig van"),  # Case insensitive
+        ("beethoven", "Beethoven, Ludwig van"),  # Lowercase
+        ("Beethoven", "Beethoven, Ludwig van"),  # Normal case
+    ],
+)
+def test_get_full_name_normalization(
+    sample_composers_csv, surname_input, expected_full_name
+):
+    """Test lookup handles whitespace and case normalization."""
     lookup = ComposerLookup(sample_composers_csv)
-    result = lookup.get_full_name("  Brahms  ")
-    assert result == "Brahms, Johannes"
-
-
-def test_get_full_name_case_insensitive(sample_composers_csv):
-    """Test case-insensitive lookup."""
-    lookup = ComposerLookup(sample_composers_csv)
-    result = lookup.get_full_name("BEETHOVEN")
-    assert result == "Beethoven, Ludwig van"
+    result = lookup.get_full_name(surname_input)
+    assert result == expected_full_name
 
 
 def test_get_full_name_dvorak_with_unicode(sample_composers_csv):
@@ -73,45 +79,40 @@ def test_composer_lookup_csv_not_found():
         ComposerLookup(Path("/nonexistent/composers.csv"))
 
 
-def test_composer_lookup_duplicate_surnames_prefers_specific(capsys):
-    """Test handling of duplicate surnames prefers most specific/complex mapping."""
-    with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".csv") as f:
-        csv_content = """simple_surname,full_name
+@pytest.mark.parametrize(
+    "csv_content,surname,expected_full_name",
+    [
+        (
+            """simple_surname,full_name
 Bach,"Bach, J.S."
 Bach,"Bach, Johann Sebastian"
-"""
-        f.write(csv_content)
-        f.flush()
-        csv_path = Path(f.name)
-
-    try:
-        lookup = ComposerLookup(csv_path)
-        # Should prefer the more specific/complex name (longer, without initials)
-        result = lookup.get_full_name("Bach")
-        assert result == "Bach, Johann Sebastian"
-        captured = capsys.readouterr()
-        assert "Warning" in captured.err
-        assert "more specific" in captured.err
-    finally:
-        csv_path.unlink()
-
-
-def test_composer_lookup_duplicate_surnames_prefers_longer(capsys):
-    """Test that longer names are preferred when duplicates exist."""
-    with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".csv") as f:
-        csv_content = """simple_surname,full_name
+""",
+            "Bach",
+            "Bach, Johann Sebastian",
+        ),
+        (
+            """simple_surname,full_name
 Mozart,"Mozart, Wolfgang"
 Mozart,"Mozart, Wolfgang Amadeus"
-"""
+""",
+            "Mozart",
+            "Mozart, Wolfgang Amadeus",
+        ),
+    ],
+)
+def test_composer_lookup_duplicate_surnames_prefers_specific(
+    capsys, csv_content, surname, expected_full_name
+):
+    """Test handling of duplicate surnames prefers most specific/complex mapping."""
+    with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".csv") as f:
         f.write(csv_content)
         f.flush()
         csv_path = Path(f.name)
 
     try:
         lookup = ComposerLookup(csv_path)
-        # Should prefer the longer, more specific name
-        result = lookup.get_full_name("Mozart")
-        assert result == "Mozart, Wolfgang Amadeus"
+        result = lookup.get_full_name(surname)
+        assert result == expected_full_name
         captured = capsys.readouterr()
         assert "Warning" in captured.err
         assert "more specific" in captured.err
